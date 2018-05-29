@@ -20,7 +20,7 @@ import autograd.numpy.random as npr
 from autograd.core import primitive
 from matplotlib import pyplot as plt
 C1 = 1
-
+PSY0 = 1
 # In[2]:
 
 

@@ -13,7 +13,7 @@ MODEL_SAVE_PATH = './model/'
 MODEL_NAME = 'solve_equation_model'
 
 # Initial Condition
-C1 = 0
+C1 = 1
 
 def add_layer(inputs, in_size, out_size, actication_function = None):
     Weights = tf.Variable(tf.random_normal([in_size,out_size]))
