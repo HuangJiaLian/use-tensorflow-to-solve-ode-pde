@@ -24,13 +24,12 @@ LAYER10_NODE = 50
 OUTPUT_NODE = 1
 
 # Number of x and t
-# 32 32 
-NX = 32
-NT = 32
-LR = 1e-1
+NT = 401
+NX = 33
+LR = 1e-3
+# LR = 0.005
 
-
-t_delta = 1/NT
+t_delta = 1/(NT-1)
 a1 = 1.
 b1 = 70.
 b2 = 70.
@@ -78,6 +77,7 @@ ts_2 = ts + t_delta
 
 # loss function
 U = forward(xs, ts)
+
 A = forward(xs, ts_2)
 B = U
 
@@ -85,17 +85,15 @@ Ax = tf.gradients(A,xs)[0]
 Axx = tf.gradients(Ax,xs)[0]
 Bx = tf.gradients(B,xs)[0]
 Bxx = tf.gradients(Bx,xs)[0]
-
 C = (t_delta/2.0)*(Axx + Bxx)
+
 temp0 = tf.sin(2*pi*xs)
 D = tf.multiply((t_delta/2.0)*c*(A + B), temp0)
 
-temp = tf.reduce_sum(tf.square(A-B-C-D))
-SSEu= a1 * tf.reduce_mean(temp)
-# SSEu= (a1/(NT*(NX+1))) * temp
+SSEu= a1 * tf.reduce_mean(tf.reduce_sum(tf.square(A-B-C-D)))
 
-zeros = np.zeros([NT*NT,1])
-ones = np.ones([NT*NT,1])
+zeros = np.zeros([NT*NX,1])
+ones = np.ones([NT*NX,1])
 
 E = forward(zeros, ts)
 F = forward(ones, ts)
@@ -103,12 +101,11 @@ G = forward(xs,zeros)
 
 
 SSEb = (b1*tf.reduce_mean(tf.reduce_sum(tf.square(E-F)))) + (b2*tf.reduce_mean(tf.reduce_sum(tf.square(G-ones))))
-# SSEb = (b1/(NT + 1))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX + 1))*tf.reduce_sum(tf.square(G-1.))
 
 loss = SSEu + SSEb
 
 train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
-
+# train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
 
 # In[4]:
 
@@ -117,15 +114,20 @@ train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
 arr = []
 for x in range(NX):
     for t in range(NT):
-        b = [x/NX, t/NT]
+        b = [x/(NX-1), t/(NT-1)]
         arr.append(b)
 #         t += 1
 data = np.array(arr)
 # print(data)
-x = data[:,0][:, np.newaxis]
 t = data[:,1][:, np.newaxis]
-print(x)
-
+x = data[:,0][:, np.newaxis]
+# print(t,t.shape)
+# print(x,x.shape)
+# tt = np.linspace(0,1,NT)
+# xt = np.linspace(0,1,NX)
+# T, X = np.meshgrid(tt,xt)
+# T.reshape(-1,1)
+# X.reshape(-1,1)
 
 
 # In[5]:
@@ -147,19 +149,20 @@ if ckpt and ckpt.model_checkpoint_path:
 #设置三维坐标  
 fig = plt.figure()  
 ax = Axes3D(fig)  
-ax.set_xlabel('X')
-ax.set_ylabel('T')
+ax.set_xlabel('T')
+ax.set_ylabel('X')
 ax.set_zlabel('U')  
-x_space =  np.arange(0, 1, 1/NX)
-t_space =  np.arange(0, 1, 1/NT)
-X,T = np.meshgrid(x_space,t_space)
-# print(X.shape)
-# print(T.shape)
+# x_space =  np.arange(0, 1, 1/NX)
+# t_space =  np.arange(0, 1, 1/NT)
+
+T,X = np.meshgrid(np.linspace(0,1,NT),np.linspace(0,1,NX))
+print(T.shape)
+print(X.shape)
 plt.ion()
 
 for i in range(400000000000):
     sess.run(train_step, feed_dict={xs:x, ts:t})    
-    if i%1000 == 0:
+    if i%100 == 0:
         print(sess.run(loss, feed_dict={xs:x, ts:t}))
         
         # 保存训练模型
@@ -167,12 +170,23 @@ for i in range(400000000000):
             os.makedirs(MODEL_SAVE_PATH)
         saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME))
                 
-        Z = sess.run(U, feed_dict={xs:X.reshape(-1,1,order='F'), ts:T.reshape(-1,1,order='C')})
+        Z = sess.run(U, feed_dict={xs:x, ts:t})
         Z = Z.reshape(NX,NT,order='C')
+
+        # tempx = X.reshape(-1,1,order='F')
+        # tempt = T.reshape(-1,1,order='C')
+        # tempx = X.reshape(-1,1,order='F')
+        # tempt = T.reshape(-1,1,order='F')
+        # print(tempx, tempx.shape)
+        # print(tempt, tempt.shape)
+        # tempxt = np.append(tempx,tempt, axis = 1)
+        # print(tempxt) 
+        # print(T.shape)
+        # print(X.shape)
         # print(Z.shape)
         try:
             surfaces.remove()
         except Exception:
             pass
-        surfaces = ax.plot_surface(X,T,Z,rstride=1,cstride=1,cmap=plt.cm.jet)
+        surfaces = ax.plot_surface(T,X,Z,rstride=1,cstride=1,cmap=plt.cm.jet)
         plt.pause(0.01)

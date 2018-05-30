@@ -32,7 +32,7 @@ OUTPUT_NODE = 1
 # 32 32 
 NX = 32
 NT = 32
-LR = 1e-1
+LR = 1e-3
 
 
 t_delta = 1/NT
@@ -162,7 +162,7 @@ for i in range(400000000000):
             os.makedirs(MODEL_SAVE_PATH)
         saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME))
                 
-        Z = sess.run(U, feed_dict={xs:X.reshape(-1,1,order='F'), ts:T.reshape(-1,1,order='C')})
+        Z = sess.run(U, feed_dict={xs:X.reshape(-1,1,order='F'), ts:T.reshape(-1,1,order='F')})
         Z = Z.reshape(32,32,order='A')
         # print(Z.shape)
         try:
