@@ -38,8 +38,6 @@ c = 1
 pi = math.pi
 
 
-# In[2]:
-
 
 # Build network 
 def add_layer(inputs, in_size, out_size, actication_function = None):
@@ -93,7 +91,8 @@ temp0 = tf.sin(2*pi*xs)
 D = tf.multiply((t_delta/2.0)*c*(A + B), temp0)
 
 temp = tf.reduce_sum(tf.square(A-B-C-D))
-SSEu= (a1/(NT*(NX+1))) * temp
+SSEu= a1 * tf.reduce_mean(temp)
+# SSEu= (a1/(NT*(NX+1))) * temp
 
 zeros = np.zeros([NT*NT,1])
 ones = np.ones([NT*NT,1])
@@ -101,7 +100,10 @@ ones = np.ones([NT*NT,1])
 E = forward(zeros, ts)
 F = forward(ones, ts)
 G = forward(xs,zeros)
-SSEb = (b1/(NT + 1))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX + 1))*tf.reduce_sum(tf.square(G-1.))
+
+
+SSEb = (b1*tf.reduce_mean(tf.reduce_sum(tf.square(E-F)))) + (b2*tf.reduce_mean(tf.reduce_sum(tf.square(G-ones))))
+# SSEb = (b1/(NT + 1))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX + 1))*tf.reduce_sum(tf.square(G-1.))
 
 loss = SSEu + SSEb
 
@@ -157,7 +159,7 @@ plt.ion()
 
 for i in range(400000000000):
     sess.run(train_step, feed_dict={xs:x, ts:t})    
-    if i%100 == 0:
+    if i%1000 == 0:
         print(sess.run(loss, feed_dict={xs:x, ts:t}))
         
         # 保存训练模型
