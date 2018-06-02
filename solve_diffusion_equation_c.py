@@ -32,7 +32,7 @@ OUTPUT_NODE = 1
 # 32 32 
 NX = 32
 NT = 32
-LR = 1e-3
+LR = 1e-4
 
 
 t_delta = 1/NT
@@ -64,15 +64,15 @@ def forward(x,t):
     print(type(net_in))
     h1 = add_layer(net_in, INPUT_NODE, LAYER1_NODE, actication_function = tf.nn.sigmoid)
     h2 = add_layer(h1, LAYER1_NODE, LAYER2_NODE, actication_function = tf.nn.sigmoid)
-    h3 = add_layer(h2, LAYER2_NODE, LAYER3_NODE, actication_function = tf.nn.sigmoid)
-    h4 = add_layer(h3, LAYER3_NODE, LAYER4_NODE, actication_function = tf.nn.sigmoid)
-    h5 = add_layer(h4, LAYER4_NODE, LAYER5_NODE, actication_function = tf.nn.sigmoid)
-    h6 = add_layer(h5, LAYER5_NODE, LAYER6_NODE, actication_function = tf.nn.sigmoid)
-    h7 = add_layer(h6, LAYER6_NODE, LAYER7_NODE, actication_function = tf.nn.sigmoid)
-    h8 = add_layer(h7, LAYER7_NODE, LAYER8_NODE, actication_function = tf.nn.sigmoid)
-    h9 = add_layer(h8, LAYER8_NODE, LAYER9_NODE, actication_function = tf.nn.sigmoid)
-    h10 = add_layer(h9, LAYER9_NODE, LAYER10_NODE, actication_function = tf.nn.sigmoid)
-    net_out = add_layer(h10, LAYER10_NODE, OUTPUT_NODE, actication_function = None)
+    # h3 = add_layer(h2, LAYER2_NODE, LAYER3_NODE, actication_function = tf.nn.sigmoid)
+    # h4 = add_layer(h3, LAYER3_NODE, LAYER4_NODE, actication_function = tf.nn.sigmoid)
+    # h5 = add_layer(h4, LAYER4_NODE, LAYER5_NODE, actication_function = tf.nn.sigmoid)
+    # h6 = add_layer(h5, LAYER5_NODE, LAYER6_NODE, actication_function = tf.nn.sigmoid)
+    # h7 = add_layer(h6, LAYER6_NODE, LAYER7_NODE, actication_function = tf.nn.sigmoid)
+    # h8 = add_layer(h7, LAYER7_NODE, LAYER8_NODE, actication_function = tf.nn.sigmoid)
+    # h9 = add_layer(h8, LAYER8_NODE, LAYER9_NODE, actication_function = tf.nn.sigmoid)
+    # h10 = add_layer(h9, LAYER9_NODE, LAYER10_NODE, actication_function = tf.nn.sigmoid)
+    net_out = add_layer(h2, LAYER10_NODE, OUTPUT_NODE, actication_function = None)
     return net_out
 
 xs = tf.placeholder(tf.float32,shape=(None, 1))
@@ -87,13 +87,13 @@ ts = tf.placeholder(tf.float32,shape=(None, 1))
 U = forward(xs, ts)
 Ux = tf.gradients(U,xs)[0]
 Uxx = tf.gradients(Ux,xs)[0]
-Ut = tf.gradients(U,ts)
+Ut = tf.gradients(U,ts)[0]
 
 
 temp0 = tf.sin(2*pi*xs)
 D = tf.multiply(c*U, temp0)
-
-SSEu = (a1/(NT*NX))*tf.reduce_sum(tf.square(Ut - Uxx - D))
+SSEu = a1*tf.reduce_mean(tf.reduce_sum(tf.square(Ut - Uxx - D)))
+# SSEu = (a1/(NT*NX))*tf.reduce_sum(tf.square(Ut - Uxx - D))
 
 zeros = np.zeros([NT*NT,1])
 ones = np.ones([NT*NT,1])
@@ -102,7 +102,8 @@ E = forward(zeros, ts)
 F = forward(ones, ts)
 G = forward(xs,zeros)
 # SSEb = (b1/(NT + 1))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX + 1))*tf.reduce_sum(tf.square(G-1.))
-SSEb = (b1/(NT))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX))*tf.reduce_sum(tf.square(G-1.))
+# SSEb = (b1/(NT))*tf.reduce_sum(tf.square(E-F)) + (b2/(NX))*tf.reduce_sum(tf.square(G-1.))
+SSEb = (b1*tf.reduce_mean(tf.reduce_sum(tf.square(E-F)))) + (b2*tf.reduce_mean(tf.reduce_sum(tf.square(G-ones))))
 loss = SSEu + SSEb
 
 train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
@@ -115,14 +116,13 @@ train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
 arr = []
 for x in range(NX):
     for t in range(NT):
-        b = [x/NX, t/NT]
+        b = [x/(NX-1), t/(NT-1)]
         arr.append(b)
 #         t += 1
 data = np.array(arr)
 # print(data)
-x = data[:,0][:, np.newaxis]
 t = data[:,1][:, np.newaxis]
-print(x)
+x = data[:,0][:, np.newaxis]
 
 
 
@@ -144,13 +144,18 @@ if ckpt and ckpt.model_checkpoint_path:
 
 #设置三维坐标  
 fig = plt.figure()  
-ax = Axes3D(fig)    
-x_space =  np.arange(0, 1, 1/NX)
-t_space =  np.arange(0, 1, 1/NT)
-X,T = np.meshgrid(x_space,t_space)
-# print(X.shape)
-# print(T.shape)
+ax = Axes3D(fig)  
+ax.set_xlabel('T')
+ax.set_ylabel('X')
+ax.set_zlabel('U')  
+# x_space =  np.arange(0, 1, 1/NX)
+# t_space =  np.arange(0, 1, 1/NT)
+
+T,X = np.meshgrid(np.linspace(0,1,NT),np.linspace(0,1,NX))
+print(T.shape)
+print(X.shape)
 plt.ion()
+
 
 for i in range(400000000000):
     sess.run(train_step, feed_dict={xs:x, ts:t})    
@@ -162,15 +167,14 @@ for i in range(400000000000):
             os.makedirs(MODEL_SAVE_PATH)
         saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME))
                 
-        Z = sess.run(U, feed_dict={xs:X.reshape(-1,1,order='F'), ts:T.reshape(-1,1,order='F')})
-        Z = Z.reshape(32,32,order='A')
-        # print(Z.shape)
+        Z = sess.run(U, feed_dict={xs:x, ts:t})
+        Z = Z.reshape(NX,NT,order='C')
+
         try:
             surfaces.remove()
         except Exception:
             pass
-        surfaces = ax.plot_surface(X,T,Z,rstride=1,cstride=1,cmap=plt.cm.jet)
+        surfaces = ax.plot_surface(T,X,Z,rstride=1,cstride=1,cmap=plt.cm.jet)
         plt.pause(0.01)
-        
         
 

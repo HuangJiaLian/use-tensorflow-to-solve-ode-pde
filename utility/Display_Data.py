@@ -12,7 +12,8 @@ NT = 401
 NX = 33
 
 # Load text from txt file 
-data = np.loadtxt('solSinEF.txt')
+data = np.loadtxt('solSinEF7_big.txt')
+#data = np.loadtxt('solSinEF.txt')
 # print(data)
 
 # 切片找到t,x,u

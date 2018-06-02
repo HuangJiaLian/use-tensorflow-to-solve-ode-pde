@@ -1,8 +1,6 @@
 
 # coding: utf-8
 
-# In[3]:
-
 
 
 import numpy as np
@@ -10,13 +8,14 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D 
 import tensorflow as tf
 import os
+import time
 
 IN_NODE = 2
-H1_NODE = 200
+H1_NODE = 50
 OUT_NODE = 1
 MODEL_SAVE_PATH = './model/'
 MODEL_NAME = 'surface_model'
-LR = 1e-3
+LR = 0.001
 #################
 # Build network 
 #################
@@ -48,7 +47,7 @@ def forward(t,x):
 NT = 401
 NX = 33
 # t_data
-data = np.loadtxt('solSinEF.txt')
+data = np.loadtxt('solSinEF7_big.txt')
 temp = data[:,0]
 t_data = temp[:,np.newaxis]
 # print(t_data, t_data.shape)
@@ -76,44 +75,14 @@ us = tf.placeholder(tf.float32,shape=(None, 1))
 ########################
 net_out = forward(ts, xs)
 loss = tf.reduce_mean(tf.reduce_sum(tf.square(us - net_out)))
-# train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
-train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
-# print(data)
-
-# # 切片找到t,x,u
-# t = data[:,0]
-# print(t,t.shape)
-# t = t[:NT]
-
-# # print(t, t.shape)
-
-# x = np.linspace(0,1,NX)
-# # print(x, x.shape)
-
-# u = data[:,2]
-# # print(u, u.shape)
-
-# fig = plt.figure()  
-# ax = Axes3D(fig)  
-# ax.set_xlabel('T')
-# ax.set_ylabel('X')
-# ax.set_zlabel('U')  
-
-# T, X = np.meshgrid(t,x)
-# print(T, T.shape)
-# print(X, X.shape)
-
-# U = u.reshape(NX,NT,order='C')
-# surfaces = ax.plot_surface(T,X,U,rstride=1,cstride=1,cmap=plt.cm.jet)
-# print(T)
-# print(X)
-# print(U)
-# plt.pause(1)
-# plt.show()
 
 ########################
-# train NN
+# Resrore NN
 ########################
+def pull_model():
+    cmd = 'scp -r  jack@10.143.7.153:~/jack/github/use-tensorflow-to-solve-ode-pde/utility/model .'
+    os.system(cmd)
+    # print(cmd)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
@@ -135,20 +104,19 @@ plt.ion()
 
 
 for i in range (4000000000):
-    sess.run(train_step, feed_dict={ts:t_data, xs:x_data, us:u_data})
-    if i % 100 == 0:
-        print(sess.run(loss, feed_dict={ts:t_data, xs:x_data, us:u_data}))
-    
-        U = sess.run(net_out, feed_dict={ts:t_data, xs:x_data})
-        U = U.reshape(NX,NT,order='C')
-        try:
-            surfaces.remove()
-        except Exception:
-            pass
-        surfaces = ax.plot_surface(T,X,U,rstride=1,cstride=1,cmap=plt.cm.jet)
-        plt.pause(0.01)
-    if i % 1000 == 0:
-        if not os.path.exists(MODEL_SAVE_PATH):
-            os.makedirs(MODEL_SAVE_PATH)
-        saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME))        
+    pull_model()
+    ckpt = tf.train.get_checkpoint_state(MODEL_SAVE_PATH)
+    if ckpt and ckpt.model_checkpoint_path:
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        print("Model restored")
+    print(sess.run(loss, feed_dict={ts:t_data, xs:x_data, us:u_data}))
+    U = sess.run(net_out, feed_dict={ts:t_data, xs:x_data})
+    U = U.reshape(NX,NT,order='C')
+    try:
+        surfaces.remove()
+    except Exception:
+        pass
+    surfaces = ax.plot_surface(T,X,U,rstride=1,cstride=1,cmap=plt.cm.jet)
+    plt.pause(5)
+          
 

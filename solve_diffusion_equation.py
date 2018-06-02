@@ -26,7 +26,7 @@ OUTPUT_NODE = 1
 # Number of x and t
 NT = 401
 NX = 33
-LR = 1e-3
+LR = 1e-4
 # LR = 0.005
 
 t_delta = 1/(NT-1)
