@@ -4,12 +4,12 @@ import tensorflow as tf
 import os
 
 IN_NODE = 2
-H1_NODE = 50
+H1_NODE = 200
 OUT_NODE = 1
 MODEL_SAVE_PATH = './model/'
-MODEL_NAME = 'big_surface_model'
+MODEL_NAME = 'h200_big_surface_model'
 #LR = 1e-1
-LR = 0.002
+LR = 0.0004
 LOAD_FILE = 'solSinEF7_big.txt'
 #################
 # Build network 
@@ -96,12 +96,6 @@ for i in range (4000000000):
         print(loss_value)
         if loss_value < 0.00001:
             exit()
-        U = sess.run(net_out, feed_dict={ts:t_data, xs:x_data})
-        U = U.reshape(NX,NT,order='C')
-        try:
-            surfaces.remove()
-        except Exception:
-            pass
     if i % 1000 == 0:
         if not os.path.exists(MODEL_SAVE_PATH):
             os.makedirs(MODEL_SAVE_PATH)

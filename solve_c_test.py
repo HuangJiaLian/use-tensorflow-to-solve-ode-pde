@@ -7,10 +7,10 @@ import math
 import os
 
 IN_NODE = 2
-H1_NODE = 50
+H1_NODE = 200
 OUT_NODE = 1
 MODEL_SAVE_PATH = './model/'
-MODEL_NAME = 'diffusion_model_c'
+MODEL_NAME = 'h200_big_surface_model_c'
 LR = 0.001
 
 
