@@ -109,13 +109,9 @@ T,X = np.meshgrid(np.linspace(0,1,NT),np.linspace(0,1,NX))
 plt.ion()
 
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state(MODEL_SAVE_PATH)
-    if ckpt and ckpt.model_checkpoint_path:
-        saver.restore(sess, ckpt.model_checkpoint_path)
-        print("Model restored")
     sess.run(init)
     for i in range (4000000000):
-        # pull_model()
+        pull_model()
         ckpt = tf.train.get_checkpoint_state(MODEL_SAVE_PATH)
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)

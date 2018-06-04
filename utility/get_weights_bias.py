@@ -28,7 +28,7 @@ try:
     print('Well Done')
 except Exception as e:
     ooops()
-    Weights1 = tf.Variable(tf.random_normal([IN_NODE,H1_N[IN_NODE,H1_NODE]]))
+    Weights1 = tf.Variable(tf.random_normal([IN_NODE,H1_NODE]))
 
 try:
     temp = np.loadtxt('biases1_best.txt', dtype=np.float32)
@@ -107,7 +107,7 @@ plt.show()
 
 with tf.Session() as sess:
     sess.run(init)
-    for i in range (1000):
+    for i in range (5000):
         sess.run(train_step, feed_dict={xs:x_data, ys:y_data})
         if i % 20 == 0:
             print(sess.run(loss,feed_dict={xs:x_data, ys:y_data}))

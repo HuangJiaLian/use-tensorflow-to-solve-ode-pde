@@ -2,6 +2,7 @@
 import numpy as np
 import tensorflow as tf
 import os
+import time
 
 IN_NODE = 2
 H1_NODE = 200
@@ -68,7 +69,8 @@ us = tf.placeholder(tf.float32,shape=(None, 1))
 # Define loss function
 ########################
 net_out = forward(ts, xs)
-loss = tf.reduce_mean(tf.reduce_sum(tf.square(us - net_out)))
+# loss = tf.reduce_mean(tf.reduce_sum(tf.square(us - net_out)))
+loss = tf.reduce_mean(tf.square(us - net_out))
 # train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
 train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
 # print(data)
@@ -91,12 +93,22 @@ if ckpt and ckpt.model_checkpoint_path:
 for i in range (4000000000):
     sess.run(train_step, feed_dict={ts:t_data, xs:x_data, us:u_data})
     if i % 100 == 0:
+        predict = sess.run(net_out, feed_dict={ts:t_data, xs:x_data, us:u_data})
         loss_value = sess.run(loss, feed_dict={ts:t_data, xs:x_data, us:u_data})
         # print(sess.run(loss, feed_dict={ts:t_data, xs:x_data, us:u_data}))
         print(loss_value)
         if loss_value < 0.00001:
             exit()
-    if i % 1000 == 0:
+    if i % 100 == 0:
         if not os.path.exists(MODEL_SAVE_PATH):
             os.makedirs(MODEL_SAVE_PATH)
-        saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME))        
+        saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME)) 
+
+    fit_data = np.append(t_data, x_data, axis = 1)
+    fit_data = np.append(fit_data, predict, axis = 1)
+    # print(fit_data)
+    # np.savetxt('fit_data.txt',fit_data,fmt='%f')
+    # time.sleep(3)
+    # print(t_data)
+    # print(x_data)
+    # print(u_data)

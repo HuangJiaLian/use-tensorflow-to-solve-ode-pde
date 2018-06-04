@@ -12,7 +12,7 @@ OUT_NODE = 1
 MODEL_SAVE_PATH = './model/'
 # MODEL_NAME = 'diffusion_model_c'
 MODEL_NAME = 'h200_big_surface_model'
-LR = 0.001
+LR = 0.0001
 LOAD_FILE = 'solSinEF7_big.txt'
 
 
@@ -130,7 +130,8 @@ Ux = tf.gradients(U,xs)[0]
 Uxx = tf.gradients(Ux,xs)[0]
 temp0 = c*tf.sin(2*pi*xs)
 s_term = tf.multiply(temp0,U)
-SSEu = tf.reduce_mean(tf.reduce_sum(tf.square(Ut - Uxx - s_term)))
+# SSEu = tf.reduce_mean(tf.reduce_sum(tf.square(Ut - Uxx - s_term)))
+SSEu = tf.reduce_mean(tf.square(Ut - Uxx - s_term))
 
 
 zeros = np.zeros([NT*NX,1])
@@ -138,7 +139,7 @@ ones = np.ones([NT*NX,1])
 E = forward(zeros, ts)
 F = forward(ones, ts)
 G = forward(xs,zeros)
-SSEb = (tf.reduce_mean(tf.reduce_sum(tf.square(E-F)))) + (tf.reduce_mean(tf.reduce_sum(tf.square(G-ones))))
+SSEb = (tf.reduce_mean(tf.square(E-F))) + (tf.reduce_mean(tf.square(G-ones)))
 
 loss = SSEu + SSEb
 train_step = tf.train.AdadeltaOptimizer(LR).minimize(loss)
@@ -152,10 +153,10 @@ sess = tf.Session()
 saver = tf.train.Saver()
 sess.run(init)
 
-# ckpt = tf.train.get_checkpoint_state(MODEL_SAVE_PATH)
-# if ckpt and ckpt.model_checkpoint_path:
-#     saver.restore(sess, ckpt.model_checkpoint_path)
-#     print("Model restored")
+ckpt = tf.train.get_checkpoint_state(MODEL_SAVE_PATH)
+if ckpt and ckpt.model_checkpoint_path:
+    saver.restore(sess, ckpt.model_checkpoint_path)
+    print("Model restored")
 
 for i in range(4000000000):
     sess.run(train_step, feed_dict={ts: t_data, xs: x_data})
